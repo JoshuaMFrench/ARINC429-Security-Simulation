@@ -14,11 +14,11 @@ def arinc429_receive(word: int) -> dict:
 	label = word & 0xFF
 
 	return {
-	"label": format(label, "08b"),
-	"sdi": format(sdi, "02b" ),
-	"data": format(data, "019b"),
+	"parity": format(parity, "1b"),
 	"ssm":format(ssm, "02b"),
-	"parity": format(parity, "1b")
+	"data": format(data, "019b"),
+	"sdi": format(sdi, "02b" ),
+	"label": format(label, "08b")
 	}
 
 def receive_msg(duration=10):
