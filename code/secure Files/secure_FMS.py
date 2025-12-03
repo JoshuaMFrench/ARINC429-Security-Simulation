@@ -1,12 +1,13 @@
-# secure_FMS.py 
-
 import random
 import can
 import time
+import hmac
+import hashlib
+import struct
 
 SENDER_ID_FMS = 1  # 0b01
 
-#random key
+# random key (for demo); in real system, inject securely
 LOCAL_KEY = random.randint(0, 0xFF)
 
 counter = 0
@@ -47,8 +48,17 @@ def send_word(bus, word_full: int):
         print("[FMS]: Messgae NOT  sent!")
 
 
+def compute_mac(key: int, label: int, sdi: int, data_field: int, nonce: int) -> int:
+   #creates a MAC and truncates it into 8 bits
+    key_bytes = key.to_bytes(1, 'big')
+    # pack label (1B), sdi (1B), data_field (4B), nonce (1B) deterministically
+    msg = struct.pack(">BBI", label & 0xFF, sdi & 0xFF, data_field & 0xFFFFFFFF) + nonce.to_bytes(1, 'big')
+    full = hmac.new(key_bytes, msg, hashlib.sha256).digest()
+    return full[0]  # truncate to 8 bits
+
+
 def broadcast_own_key(bus):
-    #initilizes key
+    # initializes key broadcast (demo only)
     label = 0xFE
     data = 0
     sdi = SENDER_ID_FMS
@@ -62,20 +72,21 @@ def broadcast_own_key(bus):
 
 
 def send_normal_messages(bus):
-    
-    #Send a series of FMS messages
-    
     global counter, LOCAL_KEY
 
     for i in range(6):
         label = 0xFF          # FMS normal data label
         sdi = SENDER_ID_FMS
-        data = random.randint(0, 0x7FFFF)
+        raw_value = random.randint(0, 0x7FF)  # 11-bit payload portion
         ssm = 0
 
-        auth = (counter & 0xFF) ^ (LOCAL_KEY & 0xFF)
+        nonce = counter & 0xFF
+        # Pack data: [nonce:8][value:11] -> fits into 19 bits
+        data_field = ((nonce & 0xFF) << 11) | (raw_value & 0x7FF)
 
-        word = arinc429_sender_40(label, sdi, data, ssm, auth)
+        auth = compute_mac(LOCAL_KEY, label, sdi, data_field, nonce) & 0xFF
+
+        word = arinc429_sender_40(label, sdi, data_field, ssm, auth)
         send_word(bus, word)
 
         counter = (counter + 1) & 0xFF
