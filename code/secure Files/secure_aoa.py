@@ -57,10 +57,12 @@ def send_key_broadcast(bus):
     print(f"[AoA] Broadcasted key: 0x{auth:02X}")
 
 def compute_mac(key: int, label: int, sdi: int, data_field: int, nonce: int) -> int:
+   #creates a MAC and truncates it into 8 bits
     key_bytes = key.to_bytes(1, 'big')
+    # pack label 
     msg = struct.pack(">BBI", label & 0xFF, sdi & 0xFF, data_field & 0xFFFFFFFF) + nonce.to_bytes(1, 'big')
     full = hmac.new(key_bytes, msg, hashlib.sha256).digest()
-    return full[0]
+    return full[0]  # truncate to 8 bits
 
 def generate_aoa_data_value():
     return random.randint(0, 0x7FF)  # now 11-bit payload portion
