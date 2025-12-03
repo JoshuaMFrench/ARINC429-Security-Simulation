@@ -1,14 +1,16 @@
-# secure_aoa.py
 import random
 import can
 import time
+import hmac
+import hashlib
+import struct
 
 SENDER_ID_AOA = 0  # 0b00
 
-# Random key on startup
+# Random key on startup 
 LOCAL_KEY = random.randint(0, 0xFF)
 
-# Counter
+# Counter / nonce
 counter = 0
 
 def compute_odd_parity(word_39bits: int) -> int:
@@ -42,7 +44,8 @@ def send_word(bus, word_full: int):
         print("[AoA]: Message sent!")
     except can.CanError:
         print("[AoA] Message NOT sent!")
-# initalizes key
+
+# initializes key broadcast 
 def send_key_broadcast(bus):
     global LOCAL_KEY
     label = 0xFE
@@ -53,8 +56,14 @@ def send_key_broadcast(bus):
     send_word(bus, word)
     print(f"[AoA] Broadcasted key: 0x{auth:02X}")
 
+def compute_mac(key: int, label: int, sdi: int, data_field: int, nonce: int) -> int:
+    key_bytes = key.to_bytes(1, 'big')
+    msg = struct.pack(">BBI", label & 0xFF, sdi & 0xFF, data_field & 0xFFFFFFFF) + nonce.to_bytes(1, 'big')
+    full = hmac.new(key_bytes, msg, hashlib.sha256).digest()
+    return full[0]
+
 def generate_aoa_data_value():
-    return random.randint(0, 0x7FFFF)
+    return random.randint(0, 0x7FF)  # now 11-bit payload portion
 
 def main():
     global counter
@@ -67,28 +76,34 @@ def main():
     #  5 random messages
     for i in range(5):
         label = 0x00
-        data = generate_aoa_data_value()
+        raw_value = generate_aoa_data_value()
         sdi = SENDER_ID_AOA
         ssm = 0
-        auth = (counter & 0xFF) ^ (LOCAL_KEY & 0xFF)
-        word = arinc429_sender_40(label, sdi, data, ssm, auth)
+        nonce = counter & 0xFF
+        data_field = (nonce << 11) | (raw_value & 0x7FF)
+        auth = compute_mac(LOCAL_KEY, label, sdi, data_field, nonce) & 0xFF
+        word = arinc429_sender_40(label, sdi, data_field, ssm, auth)
         send_word(bus, word)
         counter = (counter + 1) & 0xFF
         time.sleep(0.5)
 
     # sends  down message for replay
-    data = 0                   # AoA DOWN message
-    auth = (counter & 0xFF) ^ (LOCAL_KEY & 0xFF)
-    down_word = arinc429_sender_40(label, sdi, data, ssm, auth)
+    data = 0                   # AoA DOWN message; raw_value = 0
+    nonce = counter & 0xFF
+    data_field = (nonce << 11) | (0 & 0x7FF)
+    auth = compute_mac(LOCAL_KEY, label, sdi, data_field, nonce) & 0xFF
+    down_word = arinc429_sender_40(label, sdi, data_field, ssm, auth)
     send_word(bus, down_word)
     counter = (counter + 1) & 0xFF
     time.sleep(0.5)
 
     # sends three more random messages
     for i in range(3):
-        data = generate_aoa_data_value()
-        auth = (counter & 0xFF) ^ (LOCAL_KEY & 0xFF)
-        word = arinc429_sender_40(label, sdi, data, ssm, auth)
+        raw_value = generate_aoa_data_value()
+        nonce = counter & 0xFF
+        data_field = (nonce << 11) | (raw_value & 0x7FF)
+        auth = compute_mac(LOCAL_KEY, label, sdi, data_field, nonce) & 0xFF
+        word = arinc429_sender_40(label, sdi, data_field, ssm, auth)
         send_word(bus, word)
         counter = (counter + 1) & 0xFF
         time.sleep(0.7)
