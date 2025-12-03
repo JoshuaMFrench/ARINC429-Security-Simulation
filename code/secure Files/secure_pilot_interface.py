@@ -1,7 +1,9 @@
-# secure_pilot_interface.py
 import can
 import time
 import random
+import hmac
+import hashlib
+import struct
 
 # Learned keys and expected counters
 learned_keys = {}
@@ -27,10 +29,16 @@ def decode_40bit(word_full: int) -> dict:
         "auth": auth
     }
 
+def compute_mac(key: int, label: int, sdi: int, data_field: int, nonce: int) -> int:
+    key_bytes = key.to_bytes(1, 'big')
+    msg = struct.pack(">BBI", label & 0xFF, sdi & 0xFF, data_field & 0xFFFFFFFF) + nonce.to_bytes(1, 'big')
+    full = hmac.new(key_bytes, msg, hashlib.sha256).digest()
+    return full[0]
+
 def receive_msg(duration=20):
     bus = can.interface.Bus(channel='vcan0', interface='socketcan')
     start_time = time.time()
-    #Random direction and path status for demo
+    # Random direction and path status for demo
     direction = ["North", "East", "South", "West", "Up"]
     path = ["On", "Off"]
     print("[Pilot] Listening for messages...")
@@ -59,31 +67,43 @@ def receive_msg(duration=20):
             continue
         key = learned_keys[sd]
         auth = decoded["auth"]
-        counter_recv = auth ^ key
+
+        # Extract nonce and 11-bit value from the 19-bit data field
+        nonce = (decoded["data"] >> 11) & 0xFF
+        value = decoded["data"] & 0x7FF
+        data_field = decoded["data"]
+
         expected = expected_counters.get(sd, 0)
 
-        if counter_recv != expected:
-            print(f"[Pilot] Message FAILED auth: got counter={counter_recv}, expected={expected}. DROPPED.")
+        # Check nonce to prevent replay 
+        if nonce != expected:
+            print(f"[Pilot] Message FAILED nonce check: got nonce={nonce}, expected={expected}. DROPPED.")
             continue
 
-        # Authenticate key and increment coutnter
+        # Verify MAC
+        computed_mac = compute_mac(key, decoded["label"], sd, data_field, nonce) & 0xFF
+        if computed_mac != auth:
+            print(f"[Pilot] Message FAILED MAC verification. DROPPED.")
+            continue
+
+        # Authentication success — increment expected counter
         expected_counters[sd] = (expected + 1) & 0xFF
 
         # Figure out who sent it by label
         label = decoded["label"]
-        data_bin = format(decoded["data"], "019b")
+        data_bin = format(value, "011b")
         if label == 0x00:
-            # AoA down message
-            if decoded["data"] == 0:
+            # AoA down message (value==0 interpreted as DOWN)
+            if value == 0:
                 print("[Pilot] AoA (authenticated): plane pointing Down.")
             else:
-		#AoA other messges
+                # AoA other messages
                 print(f"[Pilot] AoA (authenticated): plane pointing {direction[random.randint(0,4)]}")
         elif label == 0xFF:
-		#FMS messgaes
+            # FMS messages
             print(f"[Pilot] FMS (authenticated): Flight is {path[random.randint(0,1)]} Path")
         else:
-            #print(f"[Pilot] Authenticated message with label {label}: data={decoded['data']}")
+            # Other authenticated messages
             pass
     bus.shutdown()
     print("[Pilot] Done listening.")
