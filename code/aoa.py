@@ -31,7 +31,8 @@ def send_word(word):
 	#convert 32 digit int into 4 bytes in big endian
 	data_bytes = word.to_bytes(4,byteorder ='big')
 	msg = can.Message(
-		arbitration_id=0x100, #Arinc has no arbitrarion so all sending messages will be on the same arbitrarion to simulate no priority
+		#Arinc has no arbitrarion so all messages are sent with the same arbitration ID so priority comes from order instead of  arbitration ID
+		arbitration_id=0x100, 
 		data=data_bytes,
 		is_extended_id = False
 	)
