@@ -38,7 +38,7 @@ def compute_mac(key: int, label: int, sdi: int, data_field: int, nonce: int) -> 
 def receive_msg(duration=20):
     bus = can.interface.Bus(channel='vcan0', interface='socketcan')
     start_time = time.time()
-    # Random direction and path status for demo
+    # Random direction and path for demo
     direction = ["North", "East", "South", "West", "Up"]
     path = ["On", "Off"]
     print("[Pilot] Listening for messages...")
@@ -86,7 +86,7 @@ def receive_msg(duration=20):
             print(f"[Pilot] Message FAILED MAC verification. DROPPED.")
             continue
 
-        # Authentication success — increment expected counter
+        # Authentication success = increment expected counter
         expected_counters[sd] = (expected + 1) & 0xFF
 
         # Figure out who sent it by label
