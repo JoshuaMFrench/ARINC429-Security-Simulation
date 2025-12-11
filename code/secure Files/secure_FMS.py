@@ -7,7 +7,7 @@ import struct
 
 SENDER_ID_FMS = 1  # 0b01
 
-# random key (for demo); in real system, inject securely
+# random key (for demo) in real system, inject securely
 LOCAL_KEY = random.randint(0, 0xFF)
 
 counter = 0
@@ -58,7 +58,7 @@ def compute_mac(key: int, label: int, sdi: int, data_field: int, nonce: int) -> 
 
 
 def broadcast_own_key(bus):
-    # initializes key broadcast (demo only)
+    # initializes key 
     label = 0xFE
     data = 0
     sdi = SENDER_ID_FMS
@@ -75,13 +75,13 @@ def send_normal_messages(bus):
     global counter, LOCAL_KEY
 
     for i in range(6):
-        label = 0xFF          # FMS normal data label
+        label = 0xFF        
         sdi = SENDER_ID_FMS
-        raw_value = random.randint(0, 0x7FF)  # 11-bit payload portion
+        raw_value = random.randint(0, 0x7FF) 
         ssm = 0
 
         nonce = counter & 0xFF
-        # Pack data: [nonce:8][value:11] -> fits into 19 bits
+        #packs nonce and data together
         data_field = ((nonce & 0xFF) << 11) | (raw_value & 0x7FF)
 
         auth = compute_mac(LOCAL_KEY, label, sdi, data_field, nonce) & 0xFF
