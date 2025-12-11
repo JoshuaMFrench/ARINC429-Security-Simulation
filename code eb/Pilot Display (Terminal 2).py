@@ -1,8 +1,6 @@
 #Terminal 2
 
-import socket
-import time
-import json
+import socket, time, json
 
 class PilotDisplay:
     def __init__(self):
