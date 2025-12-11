@@ -1,1 +1,1 @@
-This folder includes the offical ARINC 429 protocol document, our project preposal, and final report
+This folder includes the offical ARINC 429 protocol document, our project preposal, final report, and presentation slides.
