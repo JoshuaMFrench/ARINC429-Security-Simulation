@@ -65,7 +65,7 @@ def compute_mac(key: int, label: int, sdi: int, data_field: int, nonce: int) -> 
     return full[0]  # truncate to 8 bits
 
 def generate_aoa_data_value():
-    return random.randint(0, 0x7FF)  # now 11-bit payload portion
+    return random.randint(0, 0x7FF)
 
 def main():
     global counter
@@ -90,7 +90,7 @@ def main():
         time.sleep(0.5)
 
     # sends  down message for replay
-    data = 0                   # AoA DOWN message; raw_value = 0
+    data = 0                   # AoA DOWN is all 0's
     nonce = counter & 0xFF
     data_field = (nonce << 11) | (0 & 0x7FF)
     auth = compute_mac(LOCAL_KEY, label, sdi, data_field, nonce) & 0xFF
