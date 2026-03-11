@@ -29,14 +29,14 @@ ARINC429-Security-Simulation/
 ├── README.md
 ├── LICENSE
 ├── src/
-│   ├── default arinc 429/               # Base ARINC 429 protocol simulation
-│   ├── spoofing attack/               # Spoofing attack and defense
+│   ├── default arinc 429/      # Base ARINC 429 protocol simulation
+│   ├── spoofing attack/        # Spoofing attack and defense
 │   │   └── README.md           # Run instructions
-│   ├── replay attack/                 # Replay attack and defense
+│   ├── replay attack/          # Replay attack and defense
 │   │   └── README.md           # Run instructions
-│   └── dos attack/                    # DoS attack and defense
+│   └── dos attack/             # DoS attack and defense
 │       └── README.md           # Run instructions
-├── models/                     # SysML architecture models
+├── models/                     # SysML models
 └── docs/                       # Reference documentation and reports
 ```
 
