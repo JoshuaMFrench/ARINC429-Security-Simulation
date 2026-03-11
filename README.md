@@ -29,12 +29,12 @@ ARINC429-Security-Simulation/
 ├── README.md
 ├── LICENSE
 ├── src/
-│   ├── arinc429/               # Base ARINC 429 protocol simulation
-│   ├── spoofing/               # Spoofing attack and defense
+│   ├── default arinc 429/               # Base ARINC 429 protocol simulation
+│   ├── spoofing attack/               # Spoofing attack and defense
 │   │   └── README.md           # Run instructions
-│   ├── replay/                 # Replay attack and defense
+│   ├── replay attack/                 # Replay attack and defense
 │   │   └── README.md           # Run instructions
-│   └── dos/                    # DoS attack and defense
+│   └── dos attack/                    # DoS attack and defense
 │       └── README.md           # Run instructions
 ├── models/                     # SysML architecture models
 └── docs/                       # Reference documentation and reports
@@ -85,15 +85,15 @@ ip link show vcan0
 Each attack and defense module has its own `README.md` with specific run instructions. Navigate to the relevant subfolder to get started:
 
 ```
-src/spoofing/README.md
-src/replay/README.md
-src/dos/README.md
+src/spoofing attack/README.md
+src/replay attack/README.md
+src/dos attack/README.md
 ```
 
 Start with the base simulation before running any attack:
 
 ```bash
-python src/arinc429/simulation.py
+python src/default arinc 429
 ```
 
 ---
