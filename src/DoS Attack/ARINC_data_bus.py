@@ -4,7 +4,7 @@ import time
 import random
 
 HOST = 'localhost'
-PORT = 77777
+PORT = 55555
 UPDATE_RATE_SEC = 0.5
 
 def create_altitude_word(altitude: int, msg_type: str) -> bytes:
